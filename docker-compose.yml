@@ -1,0 +1,34 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "${SA_PASSWORD:-ChangeMe123!}"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqldata:/var/opt/mssql
+
+  api:
+    build: ./leave-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=LeaveDb;User Id=sa;Password=${SA_PASSWORD:-ChangeMe123!};TrustServerCertificate=True"
+      Jwt__Key: "${JWT_KEY:-REPLACE_WITH_A_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS}"
+      Jwt__Issuer: "LeaveApi"
+      Jwt__Audience: "LeaveWeb"
+    ports:
+      - "7010:8080"
+    depends_on:
+      - sqlserver
+
+  web:
+    build: ./leave-web
+    ports:
+      - "8081:80"
+    depends_on:
+      - api
+
+volumes:
+  sqldata:
